@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const {ACCESS_TOKEN} = require("./config")
 
 // const userSchema = new mongoose.schema({
 //         username:String,
@@ -8,7 +9,7 @@ const mongoose = require("mongoose")
         
 // })  //Simple Solution
 
-mongoose.connect("mongodb+srv://admin:uwiVJMOfERL63uw3@cluster0.cbez3lf.mongodb.net/user")
+mongoose.connect(ACCESS_TOKEN)
 
 const userSchema = new mongoose.Schema({
     username:{
