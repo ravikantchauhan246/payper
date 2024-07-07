@@ -1,8 +1,9 @@
 const express = require("express")
 const zod = require("zod")
-const {JWT_SECRECT} = require("../db")
+const { JWT_SECRET } = require("../config") // Ensure JWT_SECRET is correctly imported
 const jwt = require("jsonwebtoken")
-const {User} = require("../db")
+const { User, Account } = require("../db")
+const {authMiddleware} = require("../middleware")
 
 
 const router  = express.Router()
@@ -42,7 +43,19 @@ router.post("/signup",async(req,res)=>{
 
     const userId = user._id
 
-    const token = jwt.sign({userId},JWT_SECRECT)
+    await Account.create({
+        userId,
+        balance: 1+ Math.random()*10000
+    })
+
+    // Ensure JWT_SECRET is defined and not empty
+    if (!JWT_SECRET) {
+        return res.status(500).json({
+            message: "Internal server error"
+        })
+    }
+
+    const token = jwt.sign({userId},JWT_SECRET)
 
     return res.json({
         message:"User created successfullt",
@@ -65,15 +78,22 @@ router.post("/signin",async(req,res)=>{
         })
     }
 
-    const user = await User.findOnr({
+    const user = await User.findOne({
         username:req.body.username,
-        password:req.body.username
+        password:req.body.password // Fix typo: should be password, not username
     })
 
     if(user){
+        // Ensure JWT_SECRET is defined and not empty
+        if (!JWT_SECRET) {
+            return res.status(500).json({
+                message: "Internal server error"
+            })
+        }
+
         const token = jwt.sign({
             userId:user._id,
-        },JWT_SECRECT)
+        },JWT_SECRET)
 
         res.json({
             token:token
@@ -81,10 +101,62 @@ router.post("/signin",async(req,res)=>{
 
         return;
     }
-    res.json(411).json({
+    res.status(411).json({
         message:"Error while logging"
     })
 })
+
+const userUpdate = zod.object({
+    password : zod.string().optional(),
+    firstName: zod.string().optional(),
+    lastName:zod.string().optional()
+})
+
+
+router.put("/",authMiddleware,async (req,res)=>{
+    const {success} = userUpdate.safeParse(req.body)
+    if(!success){
+        return res.status(411).json({
+            message:"Error while updating information"
+        })
+    }
+        await User.updateOne({_id:req.userId},req.body)
+
+    res.json({
+        message:"Updated successfully"
+    })
+    
+    
+
+})
+
+router.get("/bulk",async(req,res)=>{
+    const filter = req.query.filter || "";
+
+    const users = await User.find({
+        $or:[{
+            firstName:{
+                "$regex":filter
+            }
+        },{
+            lastName:{
+                "$regex":filter
+            }
+        }]
+    })
+
+    res.json({
+        user : users.map(user=>({
+            username:user.username,
+            firstName:user.firstName,
+            lastName:user.lastName,
+            _id:user._id
+        }))
+    })
+})
+
+
+
 
 
 module.exports= router

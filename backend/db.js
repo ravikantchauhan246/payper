@@ -1,4 +1,4 @@
-const mongoose = require(mongoose)
+const mongoose = require("mongoose")
 
 // const userSchema = new mongoose.schema({
 //         username:String,
@@ -8,7 +8,7 @@ const mongoose = require(mongoose)
         
 // })  //Simple Solution
 
-mongoose.connect("")
+mongoose.connect("mongodb+srv://admin:uwiVJMOfERL63uw3@cluster0.cbez3lf.mongodb.net/user")
 
 const userSchema = new mongoose.Schema({
     username:{
@@ -44,8 +44,22 @@ const userSchema = new mongoose.Schema({
     }
 })
 
+const accountSchema = new mongoose.Schema({
+    userId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
+    },
+    balance:{
+        type:Number,
+        required:true
+    }
+})
+
 const User = mongoose.model("User",userSchema)
+const Account = mongoose.model("Account",accountSchema)
 
 module.exports = {
-    User
+    User,
+    Account
 }
